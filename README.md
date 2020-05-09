@@ -31,16 +31,15 @@ LIGHT_IP = "192.168.178.20" # The light IP, this creates 3 connections to allow 
 
 ## Methodology
 
-1. Grab the screen image 
-    * Take a screenshot (ImageGrab.grab) 
+1. Grab the screen image
+    * Take a screenshot (ImageGrab.grab)
     * Cut the screenshot to fit the film size (image.getbbox)
 2. Extract the dominant color
     * Resize the image to a small 100x100 size (nearest neightbour to keep the correct colors)
     * Convert the image to a 32 color image with adaptative palette
     * Get the most used color from these 32 colors subset in the generated palette
-4. Compute the luminosity from the RGB value (using L = 3R + G + 6B)
-5. Compute the temperature (using RGB to XYZ to xy to CCT)
-6. Send the color to the light :)
+3. Compute the luminosity by using the black and white image resized to 1x1 using bicubic to get a mean color
+4. Compute the temperature (using RGB to XYZ to xy to CCT)
 
 
 ## Dependencies

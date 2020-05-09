@@ -57,12 +57,6 @@ def RGB_dist(rgb1, rgb2):
     return abs(rgb1[0] - rgb2[0]) + abs(rgb1[1] - rgb2[1]) + abs(rgb1[2] - rgb2[2])
 
 
-def RGB_to_luminosity(rgb):
-    return int(
-        (rgb[0] * 299 / 1000 + rgb[1] * 114 / 1000 + rgb[2] * 587 / 1000) * 100 / 255
-    )
-
-
 def RGB_to_CCT(rgb):
     RGB = np.array(rgb)
     XYZ = sRGB_to_XYZ(RGB / 255)
@@ -85,9 +79,10 @@ def main():
         palette = converted_image.getpalette()
         dominant_color = colors[-1]
         rgb = palette[dominant_color[1] * 3 : dominant_color[1] * 3 + 3]
-        luminosity = RGB_to_luminosity(rgb)
-        luminosity = luminosity if luminosity > 1 else 1
-        luminosity = luminosity if luminosity < 100 else 100
+
+        black_n_white = image.convert('L')
+        black_n_white = black_n_white.resize((1, 1), resample=Image.BICUBIC)
+        luminosity = black_n_white.getpixel((0,0))*100/255
 
         try:
             cct = int(RGB_to_CCT(rgb))
