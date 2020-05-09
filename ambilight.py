@@ -51,7 +51,11 @@ class MultiClient:
         return self.clients[self.index % 3]
 
     def send_command(self, method, params):
-        self.get().send_command(method, params).get("result", [])
+        try:
+            self.get().send_command(method, params).get("result", [])
+        except Exception as ex:
+            print(ex)
+            print(method, params)
 
 def RGB_dist(rgb1, rgb2):
     return abs(rgb1[0] - rgb2[0]) + abs(rgb1[1] - rgb2[1]) + abs(rgb1[2] - rgb2[2])
