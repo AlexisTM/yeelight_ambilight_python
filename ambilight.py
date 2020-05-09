@@ -11,7 +11,7 @@ DO_MAIN = True
 DO_MAIN_MOON = True
 DO_AMBIENT = True
 
-DELAY = 0.05
+DELAY = 0.07
 MAX_MAIN_LUMINOSITY = 15
 LUMINOSITY_THRESHOLD = 1
 TEMPERATURE_THRESHOLD = 100
@@ -86,7 +86,7 @@ def main():
 
         black_n_white = image.convert('L')
         black_n_white = black_n_white.resize((1, 1), resample=Image.BICUBIC)
-        luminosity = black_n_white.getpixel((0,0))*100/255
+        luminosity = int(black_n_white.getpixel((0,0))*100/255)
 
         try:
             cct = int(RGB_to_CCT(rgb))
