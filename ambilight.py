@@ -4,14 +4,20 @@ import yeelight
 from PIL import ImageGrab, Image
 
 import numpy as np
+np.seterr(all='raise')
 from colour import sRGB_to_XYZ, XYZ_to_xy, xy_to_CCT
 
 DO_MAIN = True
-DO_MAIN_MOON = False
+DO_MAIN_MOON = True
 DO_AMBIENT = True
 
 DELAY = 0.05
 MAX_MAIN_LUMINOSITY = 15
+LUMINOSITY_THRESHOLD = 1
+TEMPERATURE_THRESHOLD = 100
+COLOR_THRESHOLD = 25
+
+LIGHT_IP = "192.168.178.20"
 
 class MultiClient:
     def __init__(self, ip):
@@ -74,24 +80,32 @@ def main():
         image = ImageGrab.grab()
         image.crop(image.getbbox())
         image = image.resize((100, 100), resample=Image.NEAREST)
-        # R, G, B = image.getpixel((0,0))
-        converted_image = image.convert("P", palette=Image.ADAPTIVE, colors=16)
-        # converted_image.show()
-        colors = sorted(converted_image.getcolors(16))
-        # print(colors))
+        converted_image = image.convert("P", palette=Image.ADAPTIVE, colors=32)
+        colors = sorted(converted_image.getcolors(32))
         palette = converted_image.getpalette()
         dominant_color = colors[-1]
         rgb = palette[dominant_color[1] * 3 : dominant_color[1] * 3 + 3]
         luminosity = RGB_to_luminosity(rgb)
-        cct = RGB_to_CCT(rgb)
+        luminosity = luminosity if luminosity > 1 else 1
+        luminosity = luminosity if luminosity < 100 else 100
+
+        try:
+            cct = int(RGB_to_CCT(rgb))
+            if cct > 6500 or cct < 1500:
+                cct = last_CCT
+        except:
+            print("CCT exception")
+            cct = last_CCT
 
         if DO_MAIN:
-            if DO_MAIN_MOON and abs(luminosity - last_L) > 10:
-                lights.send_command("set_scene", ["nightlight", luminosity])
-            elif abs(luminosity - last_L) > 25 or abs(last_CCT - cct) > 300:
-                effective_luminosity = luminosity * MAX_MAIN_LUMINOSITY / 100
-                print(cct)
-                lights.send_command("set_scene", ["ct", cct, effective_luminosity])
+            if DO_MAIN_MOON:
+                if abs(luminosity - last_L) > LUMINOSITY_THRESHOLD:
+                    lights.send_command("set_scene", ["nightlight", luminosity])
+            else:
+                if abs(luminosity - last_L) > 25 or abs(last_CCT - cct) > TEMPERATURE_THRESHOLD:
+                    effective_luminosity = luminosity * MAX_MAIN_LUMINOSITY / 100
+                    effective_luminosity = effective_luminosity if effective_luminosity > 1 else 1
+                    lights.send_command("set_scene", ["ct", cct, effective_luminosity])
             last_L = luminosity
             last_CCT = cct
 
@@ -108,7 +122,7 @@ def main():
                     )
                     last_L_Ambient = 0
             else:
-                if RGB_dist(last_RGB, rgb) > 25:
+                if RGB_dist(last_RGB, rgb) > COLOR_THRESHOLD:
                     lights.send_command(
                         "bg_set_scene",
                         [
@@ -122,11 +136,12 @@ def main():
         time.sleep(DELAY)
 
 
-lights = MultiClient("192.168.178.20")
+lights = MultiClient(LIGHT_IP)
 lights.get().turn_on(yeelight.LightType.Main)
 lights.get().turn_on(yeelight.LightType.Ambient)
 
 try:
     main()
-except:
+except Exception as ex:
+    print(ex)
     lights.get().turn_off()
